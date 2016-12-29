@@ -1,0 +1,9 @@
+
+P1 notes
+
+Dec 5 2016
+
+	* Organize the images.  Moved all images to test_images directory so that directory looks clean
+	* all study/lecture/try out code in lectures directory
+	* P1.ipynb contains the changed code
+	* P1.html is html version of P1.ipynb

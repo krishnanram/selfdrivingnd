@@ -1,0 +1,5 @@
+Please expand the report to include a reflection section.
+"we would like you to share your thoughts on your lane finding pipeline...
+specifically, how could you imagine making your algorithm better / more robust?
+Where will your current algorithm be likely to fail?"
+
