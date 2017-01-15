@@ -170,9 +170,7 @@ def dataExploration(train_features, train_labels, test_features, test_labels) :
     return (inputs_per_class,max_inputs)
 
 def preProcess(inputs_per_class,max_inputs,train_features,train_labels) :
-
     print('Inside preProcess() ...')
-
     # Generate additional data for underrepresented classes
     print('Generating additional data...')
     angles = [-5, 5, -10, 10, -15, 15, -20, 20, -25, 25]
@@ -208,7 +206,6 @@ def preProcess(inputs_per_class,max_inputs,train_features,train_labels) :
         test_size=0.2,
         random_state=832289
     )
-
     if plot :
         inputs_per_class = np.bincount(train_labels)
         mpl_fig = plt.figure()
@@ -218,7 +215,6 @@ def preProcess(inputs_per_class,max_inputs,train_features,train_labels) :
         ax.set_title('Number of inputs per class')
         ax.bar(range(len(inputs_per_class)), inputs_per_class, 1 / 3, color='green', label='Inputs per class')
         plt.show()
-
 
     return train_features, valid_features, train_labels, valid_labels
 
@@ -422,10 +418,12 @@ if __name__ == '__main__':
     (inputs_per_class, max_inputs) = dataExploration(train_features, train_labels, test_features, test_labels)
 
     #pre process the data, normalize the data set by creating new data set by slightly modifying available ones
-    (train_features, valid_features, train_labels, valid_labels) = preProcess(inputs_per_class, max_inputs,train_features,train_labels)
+    (train_features, valid_features, train_labels, valid_labels) = \
+        preProcess(inputs_per_class, max_inputs,train_features,train_labels)
 
     #create fully convolutional neural net
-    (input_ph, labels_ph, oh_train_labels, oh_valid_labels, loss, accuracy,prediction) = createNeuralNet(train_features, valid_features, train_labels, valid_labels)
+    (input_ph, labels_ph, oh_train_labels, oh_valid_labels, loss, accuracy,prediction) \
+        = createNeuralNet(train_features, valid_features, train_labels, valid_labels)
 
     #create test labels
     test_features = np.array(test_features) / 255 * 0.8 + 0.1
@@ -439,7 +437,8 @@ if __name__ == '__main__':
     test_cls = np.argmax(oh_test_labels, axis=1)
 
     #test the accuracy
-    print_test_accuracy(session,test_features,oh_test_labels,test_cls,y_pred_cls, show_example_errors=False, show_confusion_matrix=True)
+    print_test_accuracy(session,test_features,oh_test_labels,test_cls,y_pred_cls,
+                        show_example_errors=False, show_confusion_matrix=True)
 
     imgs = ['20.png', '80.png', 'exclamation.png', 'hochwasser.png', 'priority.png']
 
