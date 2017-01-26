@@ -13,13 +13,29 @@ from sklearn.model_selection import train_test_split
 
 plot=False
 training_epochs = 100
-training_epochs = 2
 log_batch_step = 100
-log_batch_step = 1
 batch_size = 250
 test_batch_size = 250
 test_batch_size = 10
 img_shape = (32, 32, 3)
+
+
+training_epochs = 1
+log_batch_step = 100
+batch_size = 1
+test_batch_size = 1
+
+def plot_probabilities(pred_cls, pred_prob, title) :
+
+    plt.plot(list(pred_cls), list(pred_prob), 'ro')
+    x1,x2,y1,y2 = plt.axes()
+    plt.axes((x1-1, x2+1, y1, y2+0.1))
+    plt.ylabel("Probability")
+    plt.title(title)
+    plt.show()
+
+
+
 
 
 def plot_images(images, cls_true, cls_pred=None):
@@ -346,10 +362,12 @@ def runNeuralNet(input_ph,labels_ph,oh_train_labels,oh_valid_labels,oh_test_labe
     validation_accuracy = 0.0
 
     init = tf.initialize_all_variables()
-
     session = tf.Session(config=tf.ConfigProto(log_device_placement=True))
     session.run(init)
+
+    batch_size = 5 #DEL
     batch_count = int(len(train_features) / batch_size)
+    batch_count = 5 #DEL
 
     for epoch in range(training_epochs):
 
@@ -404,6 +422,32 @@ def runNeuralNet(input_ph,labels_ph,oh_train_labels,oh_valid_labels,oh_test_labe
     return session
 
 
+
+def saveModel(sess) :
+
+    print ("Inside save model")
+    saver = tf.train.Saver()
+    MODEL_SAVE_PATH = "./model/model.ckpt"
+    save_path = saver.save(sess, MODEL_SAVE_PATH)
+    print("Trained model saved at:", save_path)
+
+def getSession() :
+
+    print ("Inside load model")
+    return None
+    tf.reset_default_graph()
+    saver = tf.train.Saver()
+    save_file = './model/model.ckpt'
+
+    import os
+    if os.path.isfile(save_file) :
+        with tf.Session() as sess:
+            saver.restore(sess, save_file)
+            # saver.restore(sess, tf.train.latest_checkpoint('.'))
+        return sess
+    else :
+        return None
+
 if __name__ == '__main__':
 
     print ("Inside main ...")
@@ -430,7 +474,12 @@ if __name__ == '__main__':
     oh_test_labels = tf.one_hot(test_labels, n_classes).eval(session=tf.Session())
 
     #run the neural net
-    session = runNeuralNet(input_ph, labels_ph, oh_train_labels, oh_valid_labels, oh_test_labels, loss, accuracy)
+
+    session = getSession()
+
+    if session == None :
+        session = runNeuralNet(input_ph, labels_ph, oh_train_labels, oh_valid_labels, oh_test_labels, loss, accuracy)
+
 
     #predict
     y_pred_cls = tf.argmax(prediction, dimension=1)
@@ -443,6 +492,7 @@ if __name__ == '__main__':
     imgs = ['20.png', '80.png', 'exclamation.png', 'hochwasser.png', 'priority.png']
 
     new_input = []
+    actual_class = [1,2,3,4,5]
 
     for imgname in imgs:
         image = mpimg.imread('images/' + imgname)
@@ -455,8 +505,25 @@ if __name__ == '__main__':
 
     new_predictions = session.run(prediction, feed_dict={input_ph: new_input})
     print(new_predictions)
-    print(session.run(tf.nn.top_k(prediction, 2), feed_dict={input_ph: new_input}))
 
+    top_k_probabilities = (session.run(tf.nn.top_k(prediction, k=5), feed_dict={input_ph: new_input}))
+
+    import pandas as pd
+    values = np.array([top_k_probabilities])
+    indices = np.array([top_k_probabilities])
+
+    for i in range(len(values)) :
+
+        pred_class = indices[i][np.argmax[values[i]]]
+
+        correct_class = np.argmax(actual_class[i])
+        plot_title = "Predicted : {} \n Correct : {} ".format(pred_class, correct_class)
+
+        plot_probabilities(indices[i], values[i], plot_title)
+
+        print ("raw top_k results:")
+        print ("tf.nn.top_k.values", list(values[i]))
+        print ("tf.nn.top_k.indices", list(indices[i]))
 
 
 
