@@ -51,7 +51,7 @@ def telemetry(sid, data):
     if speed < 10.0:
         throttle = 0.7
     elif speed < 15.0:
-        throttle = 0.4
+        throttle = 0.3
     elif speed < 22.0:
         throttle = 0.18
     else:

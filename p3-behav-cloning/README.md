@@ -69,6 +69,18 @@ Data is augmented and generated on the fly using python generators. So for every
 
 ## Evaluation Video
 
+
+
+## How to run
+
+python drive.py model.json
+
+
+## How to run in autonomus mode (after training) and check the car driving properly
+
+1. start the simulator (in your desktop, Applications/udacity-simulator)
+2. python drive.py model.json
+
 Click on the image to watch the video or [click here](https://youtu.be/kElUwEoZ7P0). You will be redirected to YouTube.
 
 [![Demo Video](https://img.youtube.com/vi/kElUwEoZ7P0/0.jpg)](https://youtu.be/kElUwEoZ7P0)

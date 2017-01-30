@@ -62,7 +62,7 @@ def get_augmented_row(row):
 
     # adjust the steering angle for left anf right cameras
     if camera == 'left':
-        steering += 0.25
+        steering += 0.30
     elif camera == 'right':
         steering -= 0.25
 
@@ -123,20 +123,20 @@ def get_model():
     # layer 2 output shape is 15x15x16
     model.add(Convolution2D(16, 3, 3, subsample=(1, 1), border_mode="valid"))
     model.add(ELU())
-    model.add(Dropout(.4))
+    model.add(Dropout(.2))
     model.add(MaxPooling2D((2, 2), border_mode='valid'))
 
     # layer 3 output shape is 12x12x16
     model.add(Convolution2D(16, 3, 3, subsample=(1, 1), border_mode="valid"))
     model.add(ELU())
-    model.add(Dropout(.4))
+    model.add(Dropout(.2))
 
     # Flatten the output
     model.add(Flatten())
 
     # layer 4
     model.add(Dense(1024))
-    model.add(Dropout(.3))
+    model.add(Dropout(.2))
     model.add(ELU())
 
     # layer 5
