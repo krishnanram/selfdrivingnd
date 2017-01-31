@@ -1,20 +1,38 @@
 import numpy as np
+import json
 import pandas as pd
 from keras.models import Sequential
 from keras.layers import Convolution2D, ELU, Flatten, Dropout, Dense, Lambda, MaxPooling2D
+from keras.layers import Dense, ZeroPadding2D, Convolution2D, MaxPooling2D, Dropout
 from keras.preprocessing.image import img_to_array, load_img
 import cv2
 
+from keras.optimizers import Adam
 rows, cols, ch = 64, 64, 3
 
 TARGET_SIZE = (64, 64)
 
+IMAGE_HEIGHT_CROP = 108
+IMAGE_WIDTH_CROP = 320
+STEERING_ADJUSTMENT = 1
+AUTONOMOUS_THROTTLE = .2
 
-def augment_brightness_camera_images(image):
-    '''
-    :param image: Input image
-    :return: output image with reduced brightness
-    '''
+IMAGE_WIDTH = 64
+IMAGE_HEIGHT = 64
+CHANNELS = 3
+LR = 1e-5
+OPTIMIZER = Adam(lr=LR)
+LOSS = 'mse'
+NB_EPOCH = 10
+BATCH_SIZE = 128
+
+img_width = 64
+img_height = 64
+
+batch_size = 125
+epochs = 3
+
+def brightenImage(image):
 
     # convert to HSV so that its easy to adjust brightness
     image1 = cv2.cvtColor(image,cv2.COLOR_RGB2HSV)
@@ -31,22 +49,19 @@ def augment_brightness_camera_images(image):
     return image1
 
 
-def resize_to_target_size(image):
+def toTargetSize(image):
     return cv2.resize(image, TARGET_SIZE)
 
 
-def crop_and_resize(image):
-    '''
-    :param image: The input image of dimensions 160x320x3
-    :return: Output image of size 64x64x3
-    '''
+def resize(image):
+
     cropped_image = image[55:135, :, :]
-    processed_image = resize_to_target_size(cropped_image)
+    processed_image = toTargetSize(cropped_image)
     return processed_image
 
 
-def preprocess_image(image):
-    image = crop_and_resize(image)
+def preprocess(image):
+    image = resize(image)
     image = image.astype(np.float32)
 
     #Normalize image
@@ -54,7 +69,8 @@ def preprocess_image(image):
     return image
 
 
-def get_augmented_row(row):
+def augment(row):
+
     steering = row['steering']
 
     # randomly choose the camera to take the image from
@@ -66,7 +82,7 @@ def get_augmented_row(row):
     elif camera == 'right':
         steering -= 0.25
 
-    image = load_img("udacity_data/" + row[camera].strip())
+    image = load_img("data/" + row[camera].strip())
     image = img_to_array(image)
 
     # decide whether to horizontally flip the image:
@@ -78,14 +94,14 @@ def get_augmented_row(row):
         image = cv2.flip(image, 1)
 
     # Apply brightness augmentation
-    image = augment_brightness_camera_images(image)
+    image = brightenImage(image)
 
     # Crop, resize and normalize the image
-    image = preprocess_image(image)
+    image = preprocess(image)
     return image, steering
 
 
-def get_data_generator(data_frame, batch_size=32):
+def getDataGenerator(data_frame, batch_size=32):
     N = data_frame.shape[0]
     batches_per_epoch = N // batch_size
 
@@ -102,7 +118,7 @@ def get_data_generator(data_frame, batch_size=32):
         # slice a `batch_size` sized chunk from the dataframe
         # and generate augmented data for each row in the chunk on the fly
         for index, row in data_frame.loc[start:end].iterrows():
-            X_batch[j], y_batch[j] = get_augmented_row(row)
+            X_batch[j], y_batch[j] = augment(row)
             j += 1
 
         i += 1
@@ -112,7 +128,112 @@ def get_data_generator(data_frame, batch_size=32):
         yield X_batch, y_batch
 
 
-def get_model():
+def getCnnModel1():
+
+    input_shape = (3, img_width, img_height)
+    model = Sequential()
+    # 2 CNNs blocks comprised of 32 filters of size 3x3.
+    model.add(ZeroPadding2D((1, 1), input_shape=(img_width, img_height, 3)))
+    model.add(Convolution2D(32, 3, 3, activation='elu'))
+    model.add(ZeroPadding2D((1, 1)))
+    model.add(Convolution2D(32, 3, 3, activation='elu'))
+    # Maxpooling
+    model.add(MaxPooling2D((2, 2), strides=(2, 2)))
+
+    # 2 CNNs blocks comprised of 64 filters of size 3x3.
+    model.add(ZeroPadding2D((1, 1), input_shape=(img_width, img_height, 3)))
+    model.add(Convolution2D(64, 3, 3, activation='elu'))
+    model.add(ZeroPadding2D((1, 1)))
+    model.add(Convolution2D(64, 3, 3, activation='elu'))
+    # Maxpooling + Dropout to avoid overfitting
+    model.add(MaxPooling2D((2, 2), strides=(2, 2)))
+    model.add(Dropout(0.5))    
+
+    # 2 CNNs blocks comprised of 128 filters of size 3x3.
+    model.add(ZeroPadding2D((1, 1), input_shape=(img_width, img_height, 3)))
+    model.add(Convolution2D(128, 3, 3, activation='elu'))
+    model.add(ZeroPadding2D((1, 1)))
+    model.add(Convolution2D(128, 3, 3, activation='elu'))
+    # Last Maxpooling. We went from an image (64, 64, 3), to an array of shape (8, 8, 128)
+    model.add(MaxPooling2D((2, 2), strides=(2, 2)))    
+
+    # Fully connected layers part.
+    model.add(Flatten(input_shape=input_shape))
+    model.add(Dense(256, activation='elu'))
+    # Dropout here to avoid overfitting
+    model.add(Dropout(0.5))    
+    model.add(Dense(64, activation='elu'))
+    # Last Dropout to avoid overfitting
+    model.add(Dropout(0.5))
+    model.add(Dense(16, activation='elu'))    
+    model.add(Dense(1))
+
+    model.compile(loss=LOSS, optimizer=OPTIMIZER)
+    return model
+
+
+def getNvidiaModel(dropout=.25):
+    print('NVIDIA Model...')
+    model = Sequential()
+    model.add(Lambda(lambda x: x / 255. - .5,
+                     input_shape=(IMAGE_HEIGHT, IMAGE_WIDTH, CHANNELS)))
+    model.add(Convolution2D(3, 1, 1, border_mode='same', name='color_conv'))
+    # Subsample == stride
+    # keras.layers.convolutional.Convolution2D(nb_filter, nb_row, nb_col, border_mode='valid')
+    model.add(Convolution2D(24, 5, 5, init='he_normal', activation='elu',
+                            subsample=(2, 2), name='conv1'))
+    model.add(Dropout(dropout))
+    model.add(Convolution2D(36, 5, 5, init='he_normal', activation='elu',
+                            subsample=(2, 2), name='conv2'))
+    model.add(Dropout(dropout))
+    model.add(Convolution2D(48, 5, 5, init='he_normal', activation='elu',
+                            subsample=(2, 2), name='conv3'))
+    model.add(Dropout(dropout))
+    model.add(Convolution2D(64, 3, 3, init='he_normal', activation='elu',
+                            subsample=(1, 1), name='conv4'))
+    model.add(Dropout(dropout))
+    model.add(Convolution2D(64, 3, 3, init='he_normal', activation='elu',
+                            subsample=(1, 1), name='conv5'))
+    model.add(Dropout(dropout))
+    model.add(Flatten())
+    # We think NVIDIA has an error and actually meant the flatten == 1152, so no Dense 1164 layer
+    # model.add(Dense(1164, init='he_normal', name="dense_1164", activation='elu'))
+    model.add(Dense(100, init='he_normal', name="dense_100", activation='elu'))
+    model.add(Dropout(dropout))
+    model.add(Dense(50, init='he_normal', name="dense_50", activation='elu'))
+    model.add(Dropout(dropout))
+    model.add(Dense(10, init='he_normal', name="dense_10", activation='elu'))
+    model.add(Dropout(dropout))
+    model.add(Dense(1, init='he_normal', name="dense_1"))
+    model.compile(loss=LOSS, optimizer=OPTIMIZER)
+    return model
+
+
+
+def comma_model():
+    print('Comma Model...')
+    model = Sequential()
+    # Color conversion
+    model.add(Lambda(lambda x: x / 127.5 - 1.,
+                     input_shape=(IMAGE_HEIGHT, IMAGE_WIDTH, CHANNELS),
+                     output_shape=(IMAGE_HEIGHT, IMAGE_WIDTH, CHANNELS)))
+    model.add(Convolution2D(3, 1, 1, border_mode='same', name='color_conv'))
+    model.add(Convolution2D(16, 8, 8, subsample=(4, 4), border_mode="same", activation='elu'))
+    model.add(Convolution2D(32, 5, 5, subsample=(2, 2), border_mode="same", activation='elu'))
+    model.add(Convolution2D(64, 5, 5, subsample=(2, 2), border_mode="same"))
+    model.add(Flatten())
+    model.add(Dropout(.2))
+    model.add(ELU())
+    model.add(Dense(512))
+    model.add(Dropout(.5))
+    model.add(ELU())
+    model.add(Dense(1))
+    model.compile(loss=LOSS, optimizer=OPTIMIZER)
+    return model
+
+
+
+def getCnnModel2():
     model = Sequential()
     # model.add(Lambda(preprocess_batch, input_shape=(160, 320, 3), output_shape=(64, 64, 3)))
 
@@ -151,9 +272,11 @@ def get_model():
     return model
 
 if __name__ == "__main__":
+
+
     BATCH_SIZE = 32
 
-    data_frame = pd.read_csv('udacity_data/driving_log.csv', usecols=[0, 1, 2, 3])
+    data_frame = pd.read_csv('data/driving_log.csv', usecols=[0, 1, 2, 3])
 
     # shuffle the data
     data_frame = data_frame.sample(frac=1).reset_index(drop=True)
@@ -169,12 +292,15 @@ if __name__ == "__main__":
     # release the main data_frame from memory
     data_frame = None
 
-    training_generator = get_data_generator(training_data, batch_size=BATCH_SIZE)
-    validation_data_generator = get_data_generator(validation_data, batch_size=BATCH_SIZE)
+    training_generator = getDataGenerator(training_data, batch_size=BATCH_SIZE)
+    validation_data_generator = getDataGenerator(validation_data, batch_size=BATCH_SIZE)
 
-    model = get_model()
+    model = getCnnModel1()
+    #model = comma_model()
+    #model = getCnnModel2()
+    #model = getNvidiaModel()
 
-    samples_per_epoch = (20000//BATCH_SIZE)*BATCH_SIZE
+    samples_per_epoch = (40000/BATCH_SIZE)*BATCH_SIZE
 
     model.fit_generator(training_generator, validation_data=validation_data_generator,
                         samples_per_epoch=samples_per_epoch, nb_epoch=3, nb_val_samples=3000)
@@ -183,4 +309,4 @@ if __name__ == "__main__":
 
     model.save_weights('model.h5')  # always save your weights after training or during training
     with open('model.json', 'w') as outfile:
-        outfile.write(model.to_json())
+        json.dump(model.to_json(), outfile)
