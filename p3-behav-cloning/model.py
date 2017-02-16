@@ -280,6 +280,8 @@ if __name__ == "__main__":
 
     # shuffle the data
     data_frame = data_frame.sample(frac=1).reset_index(drop=True)
+    from sklearn.utils import shuffle
+    data_frame = shuffle(data_frame)
 
     # 80-20 training validation split
     training_split = 0.8
