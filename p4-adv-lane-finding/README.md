@@ -18,9 +18,8 @@ Advanced_lane_finding.py implements
 
 How to run the program
 
-Assuming that you have already setup environment for Car Nano degree project, run
-python advanced_lane_finding.py
-
+./documents/Advanced_Lane_Finding.docx discusses the directory structure and also how to
+run the program in debug or in normal mode. Please refer to this document.
 
 Folder Strucure
 

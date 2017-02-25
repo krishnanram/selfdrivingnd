@@ -11,6 +11,7 @@ from DetectLanes import DetectLanes
 
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from scipy import misc
+import cv2
 
 debug = False
 
@@ -35,9 +36,11 @@ def processVideoStrem(inputVideo, outputVideo):
     white_clip = clip1.fl_image(pipeline)
     white_clip.write_videofile(outputVideo, audio=False)
 
+
+
 def pipeline(img):
 
-    fig = plt.figure(figsize=(14, 12))
+    fig = plt.figure(figsize=(24, 18))
 
     i = 1
     i = displayImage(fig, i, img, 'Raw',None)
@@ -49,12 +52,12 @@ def pipeline(img):
 
     ## Thresholded image
     thresholdedImg = thresholder.getCombinedThreshold(undistortedImg)
-    misc.imsave('tmp/thresholdedImg.jpg', img)
+    misc.imsave('tmp/thresholdedImg.jpg', thresholdedImg)
     i = displayImage(fig, i, thresholdedImg, 'Thresholded', 'gray')
 
     ## Transformed and Warped image
     warpedImg = perspectiveTransformer.getWarpedImg(thresholdedImg)
-    misc.imsave('tmp/warpedImg.jpg', img)
+    misc.imsave('tmp/warpedImg.jpg', warpedImg)
     i = displayImage(fig, i, warpedImg, 'Warped', 'gray')
 
     ## Image fitted with polygon
@@ -62,16 +65,48 @@ def pipeline(img):
     finalImg = detectLanes.draw(undistortedImg, left_fit, right_fit,
                                 perspectiveTransformer.Minv)
     misc.imsave('tmp/finalImg.jpg', finalImg)
-    displayImage(fig, i, img, 'Final')
+    i=displayImage(fig, i, finalImg, 'Final')
 
     ## Measure the curvature
-    lane_curve, car_pos = detectLanes.measureCurvature(finalImg)
+    lane_curve, pos = detectLanes.measureCurvature(finalImg)
     print ("Lane curvature :", lane_curve)
+
+    cv2.putText(finalImg, "Radius of Curvature = {}(m)".format(lane_curve.round()), (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                color=(255, 255, 255), thickness=2)
+
+    cv2.putText(finalImg, "Vehicle is ".format('{}m left of center'.format(abs(pos))), (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, color=(255, 255, 255),
+                thickness=2)
+
+    misc.imsave('tmp/finalImgWithLaneCurvature.jpg', finalImg)
+    displayImage(fig, i, finalImg, 'Lane Curvature')
+
 
     if debug == True :
         plt.show()
 
-    return img
+    return finalImg
+
+
+
+
+def runVideo(vidFile, height, width) :
+
+    cap = cv2.VideoCapture(vidFile)
+
+    cap.get(5)  # to display frame rate of video
+    # print cap.get(cv2.cv.CV_CAP_PROP_FPS)
+
+    while (cap.isOpened()):
+        ret, frame = cap.read()
+        #gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # convert to grayscale
+        cv2.imshow('frame', frame)
+        #if cv2.waitKey(1) & 0xFF == ord('q'):
+        #   break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+
 
 if __name__ == '__main__':
 
@@ -89,8 +124,10 @@ if __name__ == '__main__':
     ### Run the Video stream over and save the file
 
     inputVideo  = 'input_videos/project_video.mp4'
-    outputVideo = 'ouput_videos/project_video_out1.mp4'
+    outputVideo = 'output_videos/project_video_out.mp4'
     processVideoStrem(inputVideo,outputVideo)
+
+    runVideo(outputVideo, 960, 540)
 
     #inputVideo  = 'input_videos/harder_challenge_video.mp4'
     #outputVideo = 'ouput_videos/harder_challenge_video_out.mp4'
