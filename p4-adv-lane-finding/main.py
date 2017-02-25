@@ -74,7 +74,7 @@ def pipeline(img):
     cv2.putText(finalImg, "Radius of Curvature = {}(m)".format(lane_curve.round()), (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1,
                 color=(255, 255, 255), thickness=2)
 
-    cv2.putText(finalImg, "Vehicle is ".format('{}m left of center'.format(abs(pos))), (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, color=(255, 255, 255),
+    cv2.putText(finalImg, "Vehicle is {}m left of center".format(abs(pos)), (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, color=(255, 255, 255),
                 thickness=2)
 
     misc.imsave('tmp/finalImgWithLaneCurvature.jpg', finalImg)
@@ -128,7 +128,3 @@ if __name__ == '__main__':
     processVideoStrem(inputVideo,outputVideo)
 
     runVideo(outputVideo, 960, 540)
-
-    #inputVideo  = 'input_videos/harder_challenge_video.mp4'
-    #outputVideo = 'ouput_videos/harder_challenge_video_out.mp4'
-    #processVideoStrem(inputVideo,outputVideo)
