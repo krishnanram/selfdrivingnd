@@ -36,7 +36,7 @@ BEST_HISTBINS_LIST       = 48
 
 # In[8]:
 
-
+'''
 def displayHog(cars_train,notcars_train) :
 
     font_size = 15
@@ -158,7 +158,7 @@ def displayMisclassifiedNonCarImage(notcars_val_feat,ncars_nval,notcars_val) :
 
 # plt.savefig('./images/false_positives.png')
 
-
+'''
 
 class Train():
 
