@@ -6,6 +6,15 @@ from scipy.ndimage.measurements import label
 
 from Utils import *
 
+VEHICLES_DIR        = "./vehicles/"
+NON_VEHICLES_DIR    = "./non-vehicles/"
+IMAGES_DIR          = "./images/"
+DATA_DIR            = "./data/"
+TEST_IMAGES_DIR     = "./testimages/"
+OUTPUT_IMAGES       = "./output_images/"
+HEATMAP             = "./heatmap/"
+VIDEOS              = "./videos/"
+
 
 class Identify():
 
@@ -49,7 +58,7 @@ class Identify():
         self.heat2 = []   # heatmap for 2 frames ago
 
         # HOG parameters
-        self.color_space = 'HSV'
+        self.color_space = 'YCrCb'  #''HSV'
         self.orient = 9
         self.pix_per_cell = 8
         self.cell_per_block = 2
@@ -140,6 +149,8 @@ class Identify():
 
             if prediction == 1:
                 on_windows.append(window)
+
+            on_windows.append(window)
 
         return on_windows
 
@@ -308,74 +319,82 @@ class Identify():
 
         self.frame_number += 1
 
-        # Full Search for 1st and every nth frame
-        if self.frame_number == 1:
-            self.getImageSize(img)
-            apt_windows = self.getAllSearchWindows(img)
+        apt_windows = None
 
-            self.initializeHeatmap(img)
-            self.search_count = 0
-            self.perform_search = True
+        if  self.frame_number  == 1 or (self.frame_number > 900 and  self.frame_number < 950) :
 
-            print("full search ... ")
+            # Full Search for 1st and every nth frame
+            if self.frame_number == 1:
+                self.getImageSize(img)
+                apt_windows = self.getAllSearchWindows(img)
 
-        elif np.remainder(self.frame_number, 6) > 0: # Do a smaller search region
-
-            # Variable to control when to perform a grid search
-            if self.car_count > 0:
-                self.search_count = 1
+                self.initializeHeatmap(img)
+                self.search_count = 0
                 self.perform_search = True
-            else:
-                self.search_count += 1
-                if np.remainder(self.search_count, 2) == 0:
+
+                print("full search ... ")
+
+            elif np.remainder(self.frame_number, 6) > 0:  # Do a smaller search region
+
+                # Variable to control when to perform a grid search
+                if self.car_count > 0:
+                    self.search_count = 1
                     self.perform_search = True
-                    self.search_count = 0
                 else:
-                    self.perform_search = False
+                    self.search_count += 1
+                    if np.remainder(self.search_count, 2) == 0:
+                        self.perform_search = True
+                        self.search_count = 0
+                    else:
+                        self.perform_search = False
 
-            print("car_count: ", self.car_count, "perform_search: ", str(self.perform_search), "search_count: ", self.search_count)
+                print("car_count: ", self.car_count, "perform_search: ", str(self.perform_search), "search_count: ",
+                      self.search_count)
 
-
-            # If no bounding boxes are found yet then min_x has not changed
-            # Go back to full scan
-            if self.perform_search:
-                if self.min_x == 1280:
-                    apt_windows = self.getAllSearchWindows(img)
-                    print("full search ... ")
+                # If no bounding boxes are found yet then min_x has not changed
+                # Go back to full scan
+                if self.perform_search:
+                    if self.min_x == 1280:
+                        apt_windows = self.getAllSearchWindows(img)
+                        print("full search ... ")
+                    else:
+                        # Create a recent search region between full scan of image
+                        apt_windows = self.getWindowsForRecentRegion(img)
+                        print("short search: ")
                 else:
-                    # Create a recent search region between full scan of image
-                    apt_windows = self.getWindowsForRecentRegion(img)
-                    print("short search: ")
+                    print("Skip this frame ... no grid search")
+
             else:
-                print("Skip this frame ... no grid search")
+                self.search_count = 0
+                self.perform_search = True
+                apt_windows = self.getAllSearchWindows(img)
+                print("full search ... ")
 
-        else:
-            self.search_count = 0
-            self.perform_search = True
-            apt_windows = self.getAllSearchWindows(img)
-            print("full search ... ")
+            # If last frame no car was found then search every other frame for speed consideration
+            if self.perform_search:
+                hot_windows = self.search_windows_extended(img, apt_windows)
 
-        # If last frame no car was found then search every other frame for speed consideration
-        if self.perform_search:
-            hot_windows = self.search_windows_extended(img, apt_windows)
+                # Apply heatmap
+                heat = np.zeros_like(img[:, :, 0]).astype(np.float)
+                self.heat0 = self.addHeat(heat, hot_windows)
 
-            # Apply heatmap
-            heat = np.zeros_like(img[:, :, 0]).astype(np.float)
-            self.heat0 = self.addHeat(heat, hot_windows)
+                # Consider heatmaps from last 2 frames
+                weighted_heatmap = self.calculateHeatmap()
+                threshold_heatmap = self.applyThreshold(weighted_heatmap, 15)
 
-            # Consider heatmaps from last 2 frames
-            weighted_heatmap = self.calculateHeatmap()
-            threshold_heatmap = self.applyThreshold(weighted_heatmap, 15)
+                labels = label(threshold_heatmap)
+                self.car_count = labels[1]
 
-            labels = label(threshold_heatmap)
-            self.car_count = labels[1]
+            # Only draw boxes & find a smaller search region if car is found
+            if self.perform_search or self.car_count > 0:
+                # Bounding Boxes
+                draw_img_boxes, self.bbox = self.drawBoxes(np.copy(img), labels)
+                self.recent_search_region()
+            else:
+                draw_img_boxes = np.copy(img)
 
-        # Only draw boxes & find a smaller search region if car is found
-        if self.perform_search or self.car_count > 0:
-            # Bounding Boxes
-            draw_img_boxes, self.bbox = self.drawBoxes(np.copy(img), labels)
-            self.recent_search_region()
-        else:
+        else :
+
             draw_img_boxes = np.copy(img)
 
         print("frame_number: ", self.frame_number, " car_count: ", self.car_count, " search region: (",
@@ -387,3 +406,33 @@ class Identify():
 if __name__ == '__main__':
 
     print (" Identify ...")
+
+    from Train import *
+    train = Train()
+    model = train.getModel()
+    identify = Identify(train)
+
+    fig = plt.figure(figsize=(24, 18))
+    ### First test the pipeline for some test image
+    images = glob.glob('test_images/test6.jpg')
+    for idx, fname in enumerate(images):
+        img = mpimage.imread(fname)
+        i = displaySingleImage(fig, img, 'Raw')
+        plt.show()
+
+        processedImg = identify.pipeline(img)
+        i = displaySingleImage(fig, processedImg, 'Raw')
+        plt.show()
+
+    import os
+    #os._exit(0)
+    print(" Process the video stream ...")
+    # Project Video
+    video_output = 'project_video_output.mp4'
+    clip1 = VideoFileClip(VIDEOS + "project_video.mp4")
+
+    t0 = time.time()
+    clip_output = clip1.fl_image(identify.pipeline)
+    clip_output.write_videofile(video_output, audio=False)
+
+    print("Processing Time: ", round(time.time() - t0, 2))

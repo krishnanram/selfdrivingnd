@@ -11,6 +11,7 @@ from Utils import *
 from Explore import *
 from Train import *
 from Identify import *
+import os
 
 VEHICLES_DIR        = "./vehicles/"
 NON_VEHICLES_DIR    = "./non-vehicles/"
@@ -66,7 +67,6 @@ if __name__ == '__main__':
     print (" Model/Classify using training data...")
     train.model()
 
-    import os
     os._exit(1)
     model = train.getModel()
     identify    = Identify(train)

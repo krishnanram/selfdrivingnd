@@ -169,6 +169,7 @@ class Train():
     # Read in the classifier and X_scaler
     def getModel(self):
         filename = MODEL_DIR+'model_' + str(BEST_ORIENT_LIST) + "_" + str(BEST_CELLPERBLOCK_LIST) + "_"+ str(BEST_HISTBINS_LIST) +'.pkl'
+        #filename = MODEL_DIR + 'model.pkl'
         pkl_file = open(filename, 'rb')
         self.clf, self.X_scaler = pickle.load(pkl_file)
         pkl_file.close()
@@ -248,7 +249,7 @@ class Train():
         for not_car in not_cars_list:
             notcars.append(not_car)
 
-        color_space = 'HSV' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+        color_space = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
         pix_per_cell = 8 # HOG pixels per cell
         cell_per_block = 2 # HOG cells per block
         spatial_size = (16, 16) # Spatial binning dimensions

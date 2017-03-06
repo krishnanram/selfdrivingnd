@@ -3,6 +3,48 @@ import numpy as np
 import cv2
 from skimage.feature import hog
 
+import matplotlib.image as mpimage
+import matplotlib.pyplot as plt
+
+import glob
+
+from moviepy.video.io.VideoFileClip import VideoFileClip
+from scipy import misc
+import cv2
+
+def displayImageGrid(fig, i, img, title, cmap=None):
+
+    a = fig.add_subplot(3, 3, i)
+    plt.imshow(img, cmap)
+    a.set_title(title)
+    return i + 1
+
+
+def displaySingleImage(fig, img, title):
+
+    plt.imshow(img)
+#    fig.set_title(title)
+
+
+
+
+def runVideo(vidFile, height, width) :
+
+    cap = cv2.VideoCapture(vidFile)
+
+    cap.get(5)  # to display frame rate of video
+    # print cap.get(cv2.cv.CV_CAP_PROP_FPS)
+
+    while (cap.isOpened()):
+        ret, frame = cap.read()
+        #gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # convert to grayscale
+        cv2.imshow('frame', frame)
+        #if cv2.waitKey(1) & 0xFF == ord('q'):
+        #   break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
 
 # Define a function to return HOG features and visualization
 def get_hog_features(img, orient, pix_per_cell, cell_per_block,
