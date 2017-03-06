@@ -67,7 +67,6 @@ if __name__ == '__main__':
     print (" Model/Classify using training data...")
     train.model()
 
-    os._exit(1)
     model = train.getModel()
     identify    = Identify(train)
 
