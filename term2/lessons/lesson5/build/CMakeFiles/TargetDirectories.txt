@@ -1,0 +1,3 @@
+/opt/github/public/selfdrivingnd/term2/lessons/lesson5/build/CMakeFiles/edit_cache.dir
+/opt/github/public/selfdrivingnd/term2/lessons/lesson5/build/CMakeFiles/rebuild_cache.dir
+/opt/github/public/selfdrivingnd/term2/lessons/lesson5/build/CMakeFiles/lesson5.dir
