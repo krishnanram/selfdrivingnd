@@ -1,6 +1,17 @@
 # Unscented Kalman Filter Project Starter Code
 Self-Driving Car Engineer Nanodegree Program
 
+## Directory structure
+
+data-kalman              -> Contains data needed for testing
+templatecode            -> Contains template code from Udacity
+implementation          -> Contains implementation for the project
+
+CMakeLists.txt          -> Contains build make instructions
+Docs
+Eigen
+lessons                 -> Contains lessons code base
+
 
 ## Basic Build Instructions
 
