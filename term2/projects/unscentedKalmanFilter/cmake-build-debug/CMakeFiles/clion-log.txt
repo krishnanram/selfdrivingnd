@@ -1,0 +1,4 @@
+/Applications/CLion.app/Contents/bin/cmake/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /opt/github/public/selfdrivingnd/term2/projects/unscentedKalmanFilter
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /opt/github/public/selfdrivingnd/term2/projects/unscentedKalmanFilter/cmake-build-debug
