@@ -134,6 +134,10 @@ public:
    * @param meas_package The measurement at k+1
    */
   void updateRadar(MeasurementPackage meas_package);
+
+    void convertRadorToPolar(const MeasurementPackage &meas_package) ;
+
+    void convertLaserToPolar(const MeasurementPackage &meas_package) ;
 };
 
 #endif /* UKF_H */

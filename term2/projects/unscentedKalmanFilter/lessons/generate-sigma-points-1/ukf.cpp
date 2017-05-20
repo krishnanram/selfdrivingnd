@@ -21,11 +21,9 @@ void UKF::Init() {
 
 void UKF::GenerateSigmaPoints(MatrixXd* Xsig_out) {
 
-  //set state dimension
-  int n_x = 5;
 
-  //define spreading parameter
-  double lambda = 3 - n_x;
+  int n_x = 5;              //set state dimension
+  double lambda = 3 - n_x;  //define spreading parameter
 
   //set example state
   VectorXd x = VectorXd(n_x);
@@ -43,18 +41,11 @@ void UKF::GenerateSigmaPoints(MatrixXd* Xsig_out) {
           -0.0022,    0.0071,    0.0007,    0.0098,    0.0100,
           -0.0020,    0.0060,    0.0008,    0.0100,    0.0123;
 
-  //create sigma point matrix
-  MatrixXd Xsig = MatrixXd(n_x, 2 * n_x + 1);
 
-  //calculate square root of P
-  MatrixXd A = P.llt().matrixL();
+  MatrixXd Xsig = MatrixXd(n_x, 2 * n_x + 1);                //create sigma point matrix
+  MatrixXd A = P.llt().matrixL();                            //calculate square root of P
 
-/*******************************************************************************
- * Student part begin
- ******************************************************************************/
-
-  //calculate sigma points ... 
-
+  //calculate sigma points ...
   // Set first point equal to mean (where x == example state)
   Xsig.col(0) << x;
 
@@ -71,7 +62,8 @@ void UKF::GenerateSigmaPoints(MatrixXd* Xsig_out) {
  ******************************************************************************/
 
   //print result
-  //std::cout << "Xsig = " << std::endl << Xsig << std::endl;
+
+  std::cout << "Xsig = " << std::endl << Xsig << std::endl;
 
   //write result
   *Xsig_out = Xsig;
