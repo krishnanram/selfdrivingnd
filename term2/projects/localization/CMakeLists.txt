@@ -4,11 +4,15 @@ project(PARTICLE_FILTER)
 
 # Build the particle filter project and solution.
 # Use C++11
-set(SRCS src/main.cpp src/particle_filter.cpp)
+set(SRCS src/main.cpp src/ParticleFilter.cpp)
+set(WORKINGSRCS workingtemplate/main.cpp workingtemplate/particle_filter.cpp)
+
 set_source_files_properties(${SRCS} PROPERTIES COMPILE_FLAGS -std=c++0x)
 
 # Create the executable
 add_executable(particle_filter ${SRCS})
+add_executable(working_particle_filter ${WORKINGSRCS})
+
 
 # Use C++11
 #if [ ! -f ./src/particle_filter_sol.cpp]; then
@@ -23,6 +27,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/particle_filter_sol.cpp")
 
 	# Create the executable
 	add_executable(particle_filter_solution ${SRCS})
+	add_executable(working_particle_filter_solution ${WORKINGSRCS})
 endif()
 
 
