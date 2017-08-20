@@ -43,3 +43,8 @@ Alternatively
 ## Output
 
     Observe how the car is able to navigate the road. Increase the speed and try again. Adjust the kd, ki params if needed
+
+
+## Reflection
+
+   ./Reflection.pdf document details the approach and my reflection
